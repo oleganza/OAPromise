@@ -1,0 +1,24 @@
+# xcode noise
+build/*
+*.mode1
+*.mode1v3
+*.mode2v3
+*.perspective
+*.perspectivev3
+*.pbxuser
+*.xcworkspace
+xcuserdata
+
+# old skool
+.svn
+
+# osx noise
+profile
+xcshareddata
+
+# JetBrains App Code
+.idea
+openssl/lib/pkgconfig
+openssl/ssl
+openssl/bin
+
