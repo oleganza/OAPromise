@@ -13,8 +13,7 @@
 		205B375F16389398002B2828 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 205B375D16389398002B2828 /* Credits.rtf */; };
 		205B376216389398002B2828 /* OAAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 205B376116389398002B2828 /* OAAppDelegate.m */; };
 		205B376516389398002B2828 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 205B376316389398002B2828 /* MainMenu.xib */; };
-		205B376D163893A6002B2828 /* OAPromise.m in Sources */ = {isa = PBXBuildFile; fileRef = 205B376C163893A6002B2828 /* OAPromise.m */; };
-		205B376F163893B3002B2828 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 205B376E163893B3002B2828 /* README.md */; };
+		205FB6F91660467D00B30068 /* OAPromise.m in Sources */ = {isa = PBXBuildFile; fileRef = 205B376C163893A6002B2828 /* OAPromise.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,7 +32,7 @@
 		205B376416389398002B2828 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		205B376B163893A6002B2828 /* OAPromise.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAPromise.h; sourceTree = "<group>"; };
 		205B376C163893A6002B2828 /* OAPromise.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAPromise.m; sourceTree = "<group>"; };
-		205B376E163893B3002B2828 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		205B376E163893B3002B2828 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,7 +164,6 @@
 				205B375916389398002B2828 /* InfoPlist.strings in Resources */,
 				205B375F16389398002B2828 /* Credits.rtf in Resources */,
 				205B376516389398002B2828 /* MainMenu.xib in Resources */,
-				205B376F163893B3002B2828 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -178,7 +176,7 @@
 			files = (
 				205B375B16389398002B2828 /* main.m in Sources */,
 				205B376216389398002B2828 /* OAAppDelegate.m in Sources */,
-				205B376D163893A6002B2828 /* OAPromise.m in Sources */,
+				205FB6F91660467D00B30068 /* OAPromise.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
