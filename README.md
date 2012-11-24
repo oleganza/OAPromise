@@ -1,4 +1,4 @@
-# OAPromise
+# OAPromise - Work In Progress
 
 Promise is an object which is returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise uses callbacks to receive the value or error.
 
@@ -48,7 +48,7 @@ Send a message, receive a promise. Attach a success callback and an error callba
     	return nil;
     }];
 
-##### Example 3: call sequence with simplified error handling
+##### Example 3: call sequence with simplified error handling (trying out crazy property-block syntax)
 
 Send a message, receive a promise. Attach a success callback and an error callback to the promise. Success callback sends another message returning another promise. Next attached callbacks will apply to the returned promise. Error will be handled by the first error handler in the chain of callbacks.
 
