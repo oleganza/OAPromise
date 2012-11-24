@@ -79,17 +79,20 @@ typedef void(^OAPromiseProgressBlock)(double);
 // When the value is set (nil is allowed to mean cancellation), promise is resolved and the success completion block is called.
 // If the value is set second time, exception is raised.
 // Value can be set from any thread.
-@property(nonatomic) id value;
+@property(atomic) id value;
 
 // When the error is set (nil is ignored), promise is resolved and the failure completion block is called.
 // If the value is set second time, exception is raised.
 // Error can be set from any thread.
-@property(nonatomic) NSError* error;
+@property(atomic) NSError* error;
 
 // A value from 0.0 to 1.0 inclusive. Setter caps the value to the valid range.
 // Progress is set to 1.0 when the promise is resolved with a value.
 // When the progress is updated, all progress blocks are called in the order they have been added.
 // Exception is raised when the progress is set when the promise is already resolved.
-@property(nonatomic) double progress;
+@property(atomic) double progress;
+
+// Returns YES if the receiver is already assigned either failure or success callback.
+@property(atomic, readonly, getter=isAssignedCallback) BOOL assignedCallback;
 
 @end
