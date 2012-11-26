@@ -1,6 +1,6 @@
 # OAPromise - Work In Progress
 
-Promise is an object which is returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise uses callbacks to receive the value or error.
+Promise is an object returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise uses callbacks to receive the value or error.
 
 OAPromise objects can be passed and stored between different objects.
 
@@ -141,22 +141,17 @@ Returning ready value:
 	- (void) someMethod {
 				
 		_semaphore++;
-		OAPromise* semaphoreCompletion = [OAPromise promise];
+		OAPromise* semaphoreCompletion = [OAPromise promiseWithValue:@YES];
 		
-		[[[[self makeFirstStep] then:^(id value){
+		[[[self makeFirstStep] then:^(id value){
 			
 			if ([value isSpecialCase]) {
-				return [OAPromise promiseWithValue:nil];
+				return semaphoreCompletion;
 			}
-			
 			return [self makeSecondStep];
 			
 		} error:^(NSError* error){
-		
-			return [OAPromise promiseWithValue:nil];
-			
-		}] then:^(id value){
-			
+
 			return semaphoreCompletion;
 			
 		}] completion:^(id,id){

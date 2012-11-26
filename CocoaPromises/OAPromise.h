@@ -96,3 +96,27 @@ typedef void(^OAPromiseProgressBlock)(double);
 @property(atomic, readonly, getter=isAssignedCallback) BOOL assignedCallback;
 
 @end
+
+
+// Block-property API is useful for long chains of commands as a syntactic sugar.
+// Example:
+// [self doSomething].then(^(id _){
+//     return [self nextCommand];
+// }).then(^(id _){
+//     return [self finalCommand];
+// }).then(^(id _){
+//     return nil; // done already.
+// })
+
+@interface OAPromise (BlockProperties)
+
+// promise.then(^(id){ ... }) is equivalent to [promise then:^(id){ ... }]
+- (OAPromise*(^)(OAPromiseFinishBlock)) then;
+
+// promise.onError(^(NSError*){ ... }) is equivalent to [promise error:^(NSError*){ ... }]
+- (OAPromise*(^)(OAPromiseFailureBlock)) onError;
+
+// promise.onCompletion(^(id, NSError*){ ... }) is equivalent to [promise completion:^(id, NSError*){ ... }]
+- (OAPromise*(^)(OAPromiseCompletionBlock)) onCompletion;
+
+@end

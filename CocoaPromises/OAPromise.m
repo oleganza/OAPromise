@@ -308,7 +308,7 @@
 		}
 		else
 		{
-			// self is not resolved yet, but may generate some progress events.
+			// self is not resolved yet, but may have generated some progress events.
 			if (_progress > 0.0)
 			{
 				existingPromise.progress = _progress;
@@ -437,3 +437,44 @@
 
 
 @end
+
+
+
+
+
+
+@implementation OAPromise (BlockProperties)
+
+// promise.then(^(id){ ... }) is equivalent to [promise then:^(id){ ... }]
+- (OAPromise*(^)(OAPromiseFinishBlock)) then
+{
+	return ^(OAPromiseFinishBlock block) {
+		return [self then:block];
+	};
+}
+
+// promise.onError(^(NSError*){ ... }) is equivalent to [promise error:^(NSError*){ ... }]
+- (OAPromise*(^)(OAPromiseFailureBlock)) onError
+{
+	return ^(OAPromiseFailureBlock block) {
+		return [self error:block];
+	};
+}
+
+// promise.onCompletion(^(id, NSError*){ ... }) is equivalent to [promise completion:^(id, NSError*){ ... }]
+- (OAPromise*(^)(OAPromiseCompletionBlock)) onCompletion
+{
+	return ^(OAPromiseCompletionBlock block) {
+		return [self completion:block];
+	};
+}
+
+@end
+
+
+
+
+
+
+
+

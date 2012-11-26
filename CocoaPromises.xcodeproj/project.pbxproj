@@ -14,6 +14,7 @@
 		205B376216389398002B2828 /* OAAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 205B376116389398002B2828 /* OAAppDelegate.m */; };
 		205B376516389398002B2828 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 205B376316389398002B2828 /* MainMenu.xib */; };
 		205FB6F91660467D00B30068 /* OAPromise.m in Sources */ = {isa = PBXBuildFile; fileRef = 205B376C163893A6002B2828 /* OAPromise.m */; };
+		207DCAA516625A1E0002E035 /* OAPromiseTestSuite.m in Sources */ = {isa = PBXBuildFile; fileRef = 207DCAA416625A1E0002E035 /* OAPromiseTestSuite.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,8 @@
 		205B376B163893A6002B2828 /* OAPromise.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAPromise.h; sourceTree = "<group>"; };
 		205B376C163893A6002B2828 /* OAPromise.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAPromise.m; sourceTree = "<group>"; };
 		205B376E163893B3002B2828 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		207DCAA316625A1E0002E035 /* OAPromiseTestSuite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAPromiseTestSuite.h; sourceTree = "<group>"; };
+		207DCAA416625A1E0002E035 /* OAPromiseTestSuite.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAPromiseTestSuite.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +94,8 @@
 				205B376C163893A6002B2828 /* OAPromise.m */,
 				205B376016389398002B2828 /* OAAppDelegate.h */,
 				205B376116389398002B2828 /* OAAppDelegate.m */,
+				207DCAA316625A1E0002E035 /* OAPromiseTestSuite.h */,
+				207DCAA416625A1E0002E035 /* OAPromiseTestSuite.m */,
 				205B376316389398002B2828 /* MainMenu.xib */,
 				205B375516389398002B2828 /* Supporting Files */,
 			);
@@ -177,6 +182,7 @@
 				205B375B16389398002B2828 /* main.m in Sources */,
 				205B376216389398002B2828 /* OAAppDelegate.m in Sources */,
 				205FB6F91660467D00B30068 /* OAPromise.m in Sources */,
+				207DCAA516625A1E0002E035 /* OAPromiseTestSuite.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
