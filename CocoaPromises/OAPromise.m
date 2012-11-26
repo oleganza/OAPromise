@@ -143,44 +143,44 @@
 
 
 
-- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock progress:(OAPromiseProgressBlock)progressBlock
+- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:block error:errorBlock completion:nil progress:progressBlock];
+	return [self then:block error:errorBlock completion:nil progress:progressBlock queue:queue];
 }
 
-- (OAPromise*) then:(OAPromiseFinishBlock)block
+- (OAPromise*) then:(OAPromiseFinishBlock)block queue:(dispatch_queue_t)queue
 {
-	return [self then:block error:nil completion:nil progress:nil];
+	return [self then:block error:nil completion:nil progress:nil queue:queue];
 }
 
-- (OAPromise*) then:(OAPromiseFinishBlock)block progress:(OAPromiseProgressBlock)progressBlock
+- (OAPromise*) then:(OAPromiseFinishBlock)block progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:block error:nil completion:nil progress:progressBlock];
+	return [self then:block error:nil completion:nil progress:progressBlock queue:queue];
 }
 
-- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock
+- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:block error:errorBlock completion:nil progress:nil];
+	return [self then:block error:errorBlock completion:nil progress:nil queue:queue];
 }
 
-- (OAPromise*) error:(OAPromiseFailureBlock)errorBlock
+- (OAPromise*) error:(OAPromiseFailureBlock)errorBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:nil error:errorBlock completion:nil progress:nil];
+	return [self then:nil error:errorBlock completion:nil progress:nil queue:queue];
 }
 
-- (OAPromise*) progress:(OAPromiseProgressBlock)progressBlock
+- (OAPromise*) progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:nil error:nil completion:nil progress:progressBlock];
+	return [self then:nil error:nil completion:nil progress:progressBlock queue:queue];
 }
 
-- (OAPromise*) completion:(OAPromiseCompletionBlock)block
+- (OAPromise*) completion:(OAPromiseCompletionBlock)block queue:(dispatch_queue_t)queue
 {
-	return [self then:nil error:nil completion:block progress:nil];
+	return [self then:nil error:nil completion:block progress:nil queue:queue];
 }
 
-- (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock
+- (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue
 {
-	return [self then:nil error:nil completion:block progress:progressBlock];
+	return [self then:nil error:nil completion:block progress:progressBlock queue:queue];
 }
 
 // This is not a public method because it's incorrect to expose both then/error and completion arguments. Only either of them can be set.
@@ -188,10 +188,12 @@
 			  error:(OAPromiseFailureBlock)errorBlock
 		 completion:(OAPromiseCompletionBlock)completionBlock
 		   progress:(OAPromiseProgressBlock)progressBlock
+              queue:(dispatch_queue_t)queue
 {
 	@synchronized(self)
 	{
-		
+		if (!queue) queue = dispatch_get_main_queue();
+        
 		// If it'll remain nil, it means we have no callback added, only progress; should return self.
 		OAPromise* newPromise = nil;
 		
@@ -209,8 +211,8 @@
 			
 			_flags.callbacksSet = 1;
 			_completionBlock = [completionBlock copy];
-			_callbackQueue = dispatch_get_current_queue();
-			_errbackQueue = dispatch_get_current_queue(); // set also for consistency to avoid nasty errors.
+			_callbackQueue = queue;
+			_errbackQueue = queue; // set also for consistency to avoid nasty errors.
 			newPromise = newPromise ?: [OAPromise promise];
 		}
 		else // We are using then:error: callbacks.
@@ -228,7 +230,7 @@
 
 				_flags.callbacksSet = 1;
 				_callbackBlock = [thenBlock copy];
-				_callbackQueue = dispatch_get_current_queue();
+				_callbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
 			}
 			
@@ -244,7 +246,7 @@
 				}
 				_flags.callbacksSet = 1;
 				_errbackBlock = [errorBlock copy];
-				_errbackQueue = dispatch_get_current_queue();
+				_errbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
 			}
 		}
@@ -258,7 +260,7 @@
 			
 			[_progressBlocksAndQueues addObject:@[
 				[progressBlock copy],
-				dispatch_get_current_queue()
+				queue
 			 ]];
 		}
 		
@@ -446,26 +448,26 @@
 @implementation OAPromise (BlockProperties)
 
 // promise.then(^(id){ ... }) is equivalent to [promise then:^(id){ ... }]
-- (OAPromise*(^)(OAPromiseFinishBlock)) then
+- (OAPromise*(^)(OAPromiseFinishBlock,dispatch_queue_t)) then
 {
-	return ^(OAPromiseFinishBlock block) {
-		return [self then:block];
+	return ^(OAPromiseFinishBlock block, dispatch_queue_t queue) {
+		return [self then:block queue:queue];
 	};
 }
 
 // promise.onError(^(NSError*){ ... }) is equivalent to [promise error:^(NSError*){ ... }]
-- (OAPromise*(^)(OAPromiseFailureBlock)) onError
+- (OAPromise*(^)(OAPromiseFailureBlock,dispatch_queue_t)) onError
 {
-	return ^(OAPromiseFailureBlock block) {
-		return [self error:block];
+	return ^(OAPromiseFailureBlock block, dispatch_queue_t queue) {
+		return [self error:block queue:queue];
 	};
 }
 
 // promise.onCompletion(^(id, NSError*){ ... }) is equivalent to [promise completion:^(id, NSError*){ ... }]
-- (OAPromise*(^)(OAPromiseCompletionBlock)) onCompletion
+- (OAPromise*(^)(OAPromiseCompletionBlock,dispatch_queue_t)) onCompletion
 {
-	return ^(OAPromiseCompletionBlock block) {
-		return [self completion:block];
+	return ^(OAPromiseCompletionBlock block, dispatch_queue_t queue) {
+		return [self completion:block queue:queue];
 	};
 }
 

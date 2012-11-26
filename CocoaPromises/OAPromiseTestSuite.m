@@ -15,19 +15,19 @@
 	[self testThen].then(^OAPromise *(id value) {
 		NSLog(@"%@", value);
 		return [self testError];
-	}).then(^OAPromise *(id value) {
+	}, nil).then(^OAPromise *(id value) {
 		NSLog(@"%@", value);
 		return [self testCompletion];
-	}).then(^OAPromise *(id value) {
+	}, nil).then(^OAPromise *(id value) {
 		NSLog(@"%@", value);
 		return finalPromise;
-	}).then(^OAPromise *(id value) {
+	}, nil).then(^OAPromise *(id value) {
 		NSLog(@"Tests Completed.");
 		return nil;
-	}).onError(^OAPromise *(NSError *error) {
+	}, nil).onError(^OAPromise *(NSError *error) {
 		NSLog(@"Test Failure: %@", error.localizedDescription);
 		return nil;
-	});
+	}, nil);
 	
 	
 	//	[[[[self delayedSuccess:@"1"] then:^OAPromise*(id value){
@@ -70,7 +70,7 @@
 			promise.error = [self errorWithDescription:[NSString stringWithFormat:@"%@: results are not [1,2] => %@", NSStringFromSelector(_cmd), list]];
 		}
 		return nil;
-	}];
+	} queue:nil];
 	
 	[list addObject:@"1"];
 	
@@ -95,7 +95,7 @@
 			promise.error = [self errorWithDescription:[NSString stringWithFormat:@"%@: results are not [1,2] => %@", NSStringFromSelector(_cmd), list]];
 		}
 		return nil;
-	}];
+	} queue:nil];
 	
 	[list addObject:@"1"];
 	
@@ -121,7 +121,7 @@
 			promise.error = [self errorWithDescription:[NSString stringWithFormat:@"%@: results are not [1,2] => %@", NSStringFromSelector(_cmd), list]];
 		}
 		return nil;
-	}];
+	} queue:nil];
 	
 	[list addObject:@"1"];
 	

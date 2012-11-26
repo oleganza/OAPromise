@@ -43,26 +43,27 @@ typedef void(^OAPromiseProgressBlock)(double);
 // Returns a new promise object if either success or failure block is added. Returns self otherwise.
 //
 // Each callback is guaranteed to be called on the next runloop cycle (even if the promise is already resolved).
-// Each callback is always called on the sender's dispatch queue.
-- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock progress:(OAPromiseProgressBlock)progressBlock;
+// Each callback is called on the dispatch queue.
+// If the queue is nil, main dispatch queue is used.
+- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
 // Equivalent to -then:error:progress: with nil error block.
-- (OAPromise*) then:(OAPromiseFinishBlock)block;
-- (OAPromise*) then:(OAPromiseFinishBlock)block progress:(OAPromiseProgressBlock)progressBlock;
+- (OAPromise*) then:(OAPromiseFinishBlock)block queue:(dispatch_queue_t)queue;
+- (OAPromise*) then:(OAPromiseFinishBlock)block progress:(OAPromiseProgressBlock)progressBlock  queue:(dispatch_queue_t)queue;
 
 // Equivalent to -then:error:progress: with nil progress block.
-- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock;
+- (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock queue:(dispatch_queue_t)queue;
 
 // Equivalent to -then:error:progress: with nil completion and progress blocks.
-- (OAPromise*) error:(OAPromiseFailureBlock)errorBlock;
+- (OAPromise*) error:(OAPromiseFailureBlock)errorBlock queue:(dispatch_queue_t)queue;
 
 // Adds a progress block. Returns self. Equivalent to -then:error:progress: with first two arguments being nil.
-- (OAPromise*) progress:(OAPromiseProgressBlock)progressBlock;
+- (OAPromise*) progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
 // Equivalent to -then:error:progress:, but uses a single completion block with value and error instead of two separate blocks.
 // Returns a new promise object if block is not nil. Otherwise returns self.
-- (OAPromise*) completion:(OAPromiseCompletionBlock)block;
-- (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock;
+- (OAPromise*) completion:(OAPromiseCompletionBlock)block queue:(dispatch_queue_t)queue;
+- (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
 
 //== Sender API
@@ -111,12 +112,12 @@ typedef void(^OAPromiseProgressBlock)(double);
 @interface OAPromise (BlockProperties)
 
 // promise.then(^(id){ ... }) is equivalent to [promise then:^(id){ ... }]
-- (OAPromise*(^)(OAPromiseFinishBlock)) then;
+- (OAPromise*(^)(OAPromiseFinishBlock, dispatch_queue_t)) then;
 
 // promise.onError(^(NSError*){ ... }) is equivalent to [promise error:^(NSError*){ ... }]
-- (OAPromise*(^)(OAPromiseFailureBlock)) onError;
+- (OAPromise*(^)(OAPromiseFailureBlock, dispatch_queue_t)) onError;
 
 // promise.onCompletion(^(id, NSError*){ ... }) is equivalent to [promise completion:^(id, NSError*){ ... }]
-- (OAPromise*(^)(OAPromiseCompletionBlock)) onCompletion;
+- (OAPromise*(^)(OAPromiseCompletionBlock, dispatch_queue_t)) onCompletion;
 
 @end
