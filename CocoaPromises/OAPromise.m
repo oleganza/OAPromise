@@ -1,7 +1,50 @@
 #import "OAPromise.h"
 
+#if !__has_feature(objc_arc)
+#error ARC required: make sure you do not use -fno-objc-arc on this file in Build Phases. Or use -fobjc-arc.
+#endif
+
+#if OS_OBJECT_USE_OBJC
+#define OAPromiseDispatchBox(obj)   (obj)
+#define OAPromiseDispatchUnbox(obj) (obj)
+#else
+#define OAPromiseDispatchBox(obj)   ([OAPromiseDispatchBox withQueue:obj])
+#define OAPromiseDispatchUnbox(box) (((OAPromiseDispatchBox*)box).queue)
+#endif
+
+@interface OAPromiseDispatchBox: NSObject
++ (OAPromiseDispatchBox*) withQueue:(dispatch_queue_t)obj;
+@property(nonatomic) dispatch_queue_t queue;
+@end
+
+@implementation OAPromiseDispatchBox
++ (OAPromiseDispatchBox*) withQueue:(dispatch_queue_t)obj
+{
+    OAPromiseDispatchBox* b = [[OAPromiseDispatchBox alloc] init];
+    b.queue = obj;
+    return b;
+}
+#if !OS_OBJECT_USE_OBJC
+- (void) setQueue:(dispatch_queue_t)queue
+{
+    if (queue == _queue) return;
+    if (_queue) dispatch_release(_queue);
+    _queue = queue;
+    if (_queue) dispatch_retain(_queue);
+}
+#endif
+- (void) dealloc
+{
+    self.queue = NULL;
+}
+@end
+
+
+
 @interface OAPromise ()
 @property(atomic) OAPromise* returnedPromise;
+@property(nonatomic) dispatch_queue_t callbackQueue;
+@property(nonatomic) dispatch_queue_t errbackQueue;
 @end
 
 @implementation OAPromise {
@@ -14,8 +57,6 @@
 	OAPromiseFailureBlock _errbackBlock;
 	OAPromiseCompletionBlock _completionBlock;
 	NSMutableArray* _progressBlocksAndQueues; // list of pairs of [block, queue]
- 	dispatch_queue_t _callbackQueue; // retained/released by ARC
-	dispatch_queue_t _errbackQueue; // retained/released by ARC
 	OAPromise* _substitutePromise; // when not nil, replaces self
 }
 
@@ -24,6 +65,28 @@
 @synthesize error=_error;
 @dynamic assignedCallback;
 
+- (void) dealloc
+{
+    self.callbackQueue = nil;
+    self.errbackQueue = nil;
+}
+
+#if !OS_OBJECT_USE_OBJC
+- (void) setCallbackQueue:(dispatch_queue_t)q
+{
+    if (q == _callbackQueue) return;
+    if (_callbackQueue) dispatch_release(_callbackQueue);
+    _callbackQueue = q;
+    if (_callbackQueue) dispatch_retain(_callbackQueue);
+}
+- (void) setErrbackQueue:(dispatch_queue_t)q
+{
+    if (q == _errbackQueue) return;
+    if (_errbackQueue) dispatch_release(_errbackQueue);
+    _errbackQueue = q;
+    if (_errbackQueue) dispatch_retain(_errbackQueue);
+}
+#endif
 
 #pragma mark - Sender API
 
@@ -211,8 +274,8 @@
 			
 			_flags.callbacksSet = 1;
 			_completionBlock = [completionBlock copy];
-			_callbackQueue = queue;
-			_errbackQueue = queue; // set also for consistency to avoid nasty errors.
+			self.callbackQueue = queue;
+			self.errbackQueue = queue; // set also for consistency to avoid nasty errors.
 			newPromise = newPromise ?: [OAPromise promise];
 		}
 		else // We are using then:error: callbacks.
@@ -230,7 +293,7 @@
 
 				_flags.callbacksSet = 1;
 				_callbackBlock = [thenBlock copy];
-				_callbackQueue = queue;
+				self.callbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
 			}
 			
@@ -246,7 +309,7 @@
 				}
 				_flags.callbacksSet = 1;
 				_errbackBlock = [errorBlock copy];
-				_errbackQueue = queue;
+				self.errbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
 			}
 		}
@@ -260,7 +323,7 @@
 			
 			[_progressBlocksAndQueues addObject:@[
 				[progressBlock copy],
-				queue
+				OAPromiseDispatchBox(queue)
 			 ]];
 		}
 		
@@ -334,7 +397,7 @@
 	for (NSArray* blockAndQueue in _progressBlocksAndQueues)
 	{
 		OAPromiseProgressBlock block = blockAndQueue[0];
-		dispatch_queue_t queue = blockAndQueue[1];
+		dispatch_queue_t queue = OAPromiseDispatchUnbox(blockAndQueue[1]);
 		dispatch_async(queue, ^{
 			block(progress);
 		});
@@ -346,7 +409,7 @@
 	if (_completionBlock)
 	{
 		OAPromiseCompletionBlock block = _completionBlock;
-		dispatch_async(_callbackQueue, ^{
+		dispatch_async(self.callbackQueue, ^{
 			OAPromise* nextPromise = block(value, nil);
 			[self connectNextPromise:nextPromise context:@"completion block on success"];
 		});
@@ -354,7 +417,7 @@
 	else if (_callbackBlock)
 	{
 		OAPromiseFinishBlock block = _callbackBlock;
-		dispatch_async(_callbackQueue, ^{
+		dispatch_async(self.callbackQueue, ^{
 			OAPromise* nextPromise = block(value);
 			[self connectNextPromise:nextPromise context:@"success callback"];
 		});
@@ -366,7 +429,7 @@
 	if (_completionBlock)
 	{
 		OAPromiseCompletionBlock block = _completionBlock;
-		dispatch_async(_errbackQueue, ^{
+		dispatch_async(self.errbackQueue, ^{
 			OAPromise* nextPromise = block(nil, error);
 			[self connectNextPromise:nextPromise context:@"completion block on failure"];
 		});
@@ -374,7 +437,7 @@
 	else if (_errbackBlock)
 	{
 		OAPromiseFailureBlock block = _errbackBlock;
-		dispatch_async(_errbackQueue, ^{
+		dispatch_async(self.errbackQueue, ^{
 			OAPromise* nextPromise = block(error);
 			[self connectNextPromise:nextPromise context:@"failure callback"];
 		});
@@ -423,9 +486,9 @@
 - (void) cleanupCallbacks
 {
 	_progressBlocksAndQueues = nil;
-	_callbackQueue = nil;
+	self.callbackQueue = nil;
+    self.errbackQueue = nil;
 	_callbackBlock = nil;
-	_errbackQueue = nil;
 	_errbackBlock = nil;
 	_completionBlock = nil;
 }
