@@ -280,6 +280,7 @@
 		}
 		else // We are using then:error: callbacks.
 		{
+            int callbacksSet = 0;
 			if (thenBlock)
 			{
 				if (_flags.callbacksSet)
@@ -291,7 +292,7 @@
 					@throw [NSException exceptionWithName:@"OAPromiseInconsistency" reason:@"Cannot set success block, substitute promise is already assigned." userInfo:nil];
 				}
 
-				_flags.callbacksSet = 1;
+                callbacksSet = 1;
 				_callbackBlock = [thenBlock copy];
 				self.callbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
@@ -307,11 +308,13 @@
 				{
 					@throw [NSException exceptionWithName:@"OAPromiseInconsistency" reason:@"Cannot set error block, substitute promise is already assigned." userInfo:nil];
 				}
-				_flags.callbacksSet = 1;
+				callbacksSet = 1;
 				_errbackBlock = [errorBlock copy];
 				self.errbackQueue = queue;
 				newPromise = newPromise ?: [OAPromise promise];
 			}
+            
+            _flags.callbacksSet = callbacksSet;
 		}
 		
 		if (progressBlock)
