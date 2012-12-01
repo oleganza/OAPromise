@@ -6,7 +6,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
 {
-	[[[OAPromiseTestSuite alloc] init] testAll];
+    [[[OAPromiseTestSuite alloc] init] testAll];
 }
 
 
