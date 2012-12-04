@@ -12,7 +12,10 @@
     // 1. Parallel sequence.
     // 2. Serial sequence of operations. Later operations are dropped when 
     
-    [self testThen].then(^OAPromise *(id value) {
+    [self testPropertyAccessPerformance].then(^OAPromise *(id value) {
+        NSLog(@"%@", value);
+        return [self testThen];
+    }, nil).then(^OAPromise *(id value) {
         NSLog(@"%@", value);
         return [self testError];
     }, nil).then(^OAPromise *(id value) {
@@ -51,6 +54,29 @@
     // 6. Derived promise callbacks are never called and properly freed when previous promise's block returns nil.
     
 
+}
+
+- (OAPromise*) testPropertyAccessPerformance
+{
+    NSDate* start = [NSDate date];
+    
+    OAPromise* promise = [OAPromise promiseWithValue:@1];
+    for (int i =0; i < 1000000; i++)
+    {
+        id value1 = promise.value;
+        id value2 = promise.value;
+        id value3 = promise.value;
+        id value4 = promise.value;
+        id value5 = promise.value;
+        if (!value1) // making compiler happy
+        {
+            NSLog(@"value1 = %@, %@, %@, %@, %@", value1, value2, value3, value4, value5);
+        }
+    }
+    
+    NSDate* finish = [NSDate date];
+    
+    return [OAPromise promiseWithValue:[NSString stringWithFormat:@"Property access time: %f sec", [finish timeIntervalSinceDate:start]]];
 }
 
 - (OAPromise*) testThen

@@ -45,6 +45,7 @@
 @property(atomic) OAPromise* returnedPromise;
 @property(nonatomic) dispatch_queue_t callbackQueue;
 @property(nonatomic) dispatch_queue_t errbackQueue;
+//@property(nonatomic) dispatch_queue_t syncQueue; // used instead of @synchronize
 @end
 
 @implementation OAPromise {
@@ -65,10 +66,20 @@
 @synthesize error=_error;
 @dynamic assignedCallback;
 
+- (id) init
+{
+    if (self = [super init])
+    {
+        // self.syncQueue = dispatch_queue_create("com.oleganza.OAPromiseSyncQueue", 0);
+    }
+    return self;
+}
+
 - (void) dealloc
 {
     self.callbackQueue = nil;
     self.errbackQueue = nil;
+//    self.syncQueue = nil;
 }
 
 #if !OS_OBJECT_USE_OBJC
@@ -86,7 +97,16 @@
     _errbackQueue = q;
     if (_errbackQueue) dispatch_retain(_errbackQueue);
 }
+//- (void) setSyncQueue:(dispatch_queue_t)q
+//{
+//    if (q == _syncQueue) return;
+//    if (_syncQueue) dispatch_release(_syncQueue);
+//    _syncQueue = q;
+//    if (_syncQueue) dispatch_retain(_syncQueue);
+//}
 #endif
+
+
 
 #pragma mark - Sender API
 
@@ -138,6 +158,14 @@
 
 - (id) value
 {
+    // @synchronized: 1.2  x6
+    // dispatch_sync: 0.8  x4 -> does not give enough advantage over @synchronized: requires creation of a queue per promise and uglier code.
+    // bare access:   0.2
+//    __block id v = nil;
+//    dispatch_sync(_syncQueue, ^{
+//        v = _value;
+//    });
+//    return v;
     @synchronized(self)
     {
         return _value;
