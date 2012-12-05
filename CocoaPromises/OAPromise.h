@@ -102,6 +102,8 @@ typedef void(^OAPromiseProgressBlock)(double);
 // Returns YES if the receiver is already resolved with either error or value.
 @property(atomic, readonly, getter=isResolved) BOOL resolved;
 
+- (BOOL) orly; //https://twitter.com/michaelklishin/status/272997040496209920
+
 @end
 
 
