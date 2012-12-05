@@ -72,33 +72,46 @@ In this example `-then:` assigns the first callback and returns a promise to whi
 
 ##### Handle all errors in one place
 
+When the promise is resolved with an error, it falls through the chain of promises until the first failure callback. This allows to handle different errors in a single place.
 
-
-    [Person loadFromDisk].then(^(id person){
+    [[[[Person loadFromDisk] then:^(id person){
         return [person loadPicture];
-    }).then(^(id picture){
+    }] then:^(id picture){
         NSLog(@"Picture loaded.");
         return nil;
-    }).onError(^(NSError* error){
-        NSLog(@"Failed to load either person or picture.");
-        return nil;
-    });
+    }] error:^(NSError* error) {
+    	NSLog(@"Error occurred: %@", error);
+    	return nil;
+    }];
 
-##### Example 4: call sequence with error handling at each step
+In this example, if `-loadFromDisk` fails, the error will be handled without picture being loaded.
 
+Fall-through errors allow to not deal with errors in some parts of your code and cleanly handle them in some others. For instance, `-loadPicture` internally may have three different operations returning promises and not handle any error by itself because it will be handled at UI level by whatever piece of code currently in charge.
+
+
+##### Recovering from errors
+
+Success and error callbacks behave the same way: they both must return a promise or `nil`. If promise is returned, the chain will continue as expected. If `nil` is returned, the chain will halt.
+
+It means, that if error callback returns a promise, we have recovered from the error and may continue.
 
 
     [[[Person loadFromDisk] then:^(id person){
         return [person loadPicture];
     } error:^(NSError* error){
-        NSLog(@"Failed to load person.");
-        return nil;
+        NSLog(@"Failed to load person from disk. Try the server.");
+        return [[Person loadFromServer] then:^(id person){ 
+        	return [person loadPicture];
+        }];
     }] then:^(id picture){
         NSLog(@"Picture loaded");
     } error:^(NSError* error){
-        NSLog(@"Failed to load picture.");
+        NSLog(@"Failed to load picture (or person from the server).");
         return nil;
     }];
+
+Here we try to load the data from disk, but if it fails, we go to the server. In this example we do not handle the error from `-loadFromServer` and let it fall through to the common error handler.
+
 
 
 
