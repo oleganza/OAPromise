@@ -225,6 +225,14 @@
     }
 }
 
+- (BOOL) isResolved
+{
+    @synchronized(self)
+    {
+        return _flags.resolved;
+    }
+}
+
 
 
 
@@ -414,6 +422,17 @@
         }
     }
 }
+
+
+- (OAPromise*) promisedValueForKey:(NSString*)key
+{
+    return [self then:^(id obj) {
+        return [OAPromise promiseWithValue:[obj valueForKey:key]];
+    } queue:nil];
+}
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-# OAPromise - Work In Progress
+# OAPromise v0.1
 
 Promise is an object returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise uses callbacks to receive the value or error.
 
@@ -17,17 +17,25 @@ OAPromise supports progress notifications.
 
 ### Motivation
 
-In comparison to usual callback-based APIs, OAPromise:
+Comparing to usual callback-based APIs, OAPromise has several advantages:
 
-* allows passing unfinished result between objects,
-* automatically deals with dispatch queues of the callers,
-* provides consistent API for reporting errors and progress.
-
-
-### Reading promises
+* Allows passing unfinished result between objects.
+* Automatically deals with dispatch queues of the callers.
+* Provides consistent API for reporting errors and progress.
+* Enables fall-through for errors to the nearest error handler.
 
 
-##### Example 1: simple callback
+### To be done
+
+* Easy API for chaining several typical promises. (E.g. uploading several pictures.)
+* API for concurrent operations with explicit policy of error handling.
+* [Done] Convenience API for accessing properties of the object in form of promises. [self then:^(id v){ return [OAPromise promiseWithValue:[v valueForKey:key]]; }]
+
+
+### Examples
+
+
+##### Simple callback
 
 Send a message, receive a promise. Attach a callback to the promise.
 
@@ -36,9 +44,9 @@ Send a message, receive a promise. Attach a callback to the promise.
         return nil;
     }];
 
-##### Example 2: handling errors
+##### Handle errors
 
-Send a message, receive a promise. Attach a success callback and an error callback to the promise.
+Send a message, receive a promise. Attach a success callback and a failure callback to the promise.
 
     [[Person loadFromDisk] then:^(id person){
         NSLog(@"Person loaded.");
@@ -48,9 +56,23 @@ Send a message, receive a promise. Attach a success callback and an error callba
         return nil;
     }];
 
-##### Example 3: call sequence with simplified error handling (trying out crazy property-block syntax)
+##### Chaining promises
 
-Send a message, receive a promise. Attach a success callback and an error callback to the promise. Success callback sends another message returning another promise. Next attached callbacks will apply to the returned promise. Error will be handled by the first error handler in the chain of callbacks.
+Each success or failure callback returns a promise or `nil`. This allows chaining several operations.
+
+    [[[Person loadFromDisk] then:^(id person){
+        return [person loadPicture];
+    }] then:^(id picture){
+        NSLog(@"Picture loaded.");
+        return nil;
+    }]
+
+In this example `-then:` assigns the first callback and returns a promise to which we attach a second callback. When the first operation completes, `-loadPicture` returns another promise which magically linked with the one returned by `-then:` before. This way we have chained two callbacks even before the first operation (`loadFromDisk`) has completed.
+
+
+##### Handle all errors in one place
+
+
 
     [Person loadFromDisk].then(^(id person){
         return [person loadPicture];

@@ -65,6 +65,9 @@ typedef void(^OAPromiseProgressBlock)(double);
 - (OAPromise*) completion:(OAPromiseCompletionBlock)block queue:(dispatch_queue_t)queue;
 - (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
+// Returns a promise which will be resolved with a value returned by -valueForKey:
+- (OAPromise*) promisedValueForKey:(NSString*)key;
+
 
 //== Sender API
 
@@ -95,6 +98,9 @@ typedef void(^OAPromiseProgressBlock)(double);
 
 // Returns YES if the receiver is already assigned either failure or success callback.
 @property(atomic, readonly, getter=isAssignedCallback) BOOL assignedCallback;
+
+// Returns YES if the receiver is already resolved with either error or value.
+@property(atomic, readonly, getter=isResolved) BOOL resolved;
 
 @end
 
