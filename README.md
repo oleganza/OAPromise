@@ -114,6 +114,45 @@ Here we try to load the data from disk, but if it fails, we go to the server. In
 
 
 
+##### Providing progress updates
+
+Promises are also useful for providing current progress. The owner of the promise can update its progress property.
+
+<short example>
+
+
+<combined example, see below>
+
+
+##### Cancellation
+
+
+- (OAPromise*) doEverything
+{
+	__block OAPromise* loadPicturePromise;
+	__block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
+		loadPicturePromise = [person loadPicture];
+        return [loadPicturePromise progress:^(double p){
+			promise.progress = 0.5 + 0.5*p;
+		}];
+	} progress:^(double p){
+		promise.progress = 0.5*p;
+	}];
+	
+	return [promise progress:^(double p){
+		NSLog(@"pro = %f", p)
+	}];
+}
+
+OAPromise* promise = [self doEverything];
+
+
+- (void) cancel
+{
+	promise.error = NSUserCancelledError();
+}
+
+
 
 ### Creating promises
 
