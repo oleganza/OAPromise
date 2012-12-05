@@ -118,8 +118,35 @@ Here we try to load the data from disk, but if it fails, we go to the server. In
 
 Promises are also useful for providing current progress. The owner of the promise can update its progress property.
 
-<short example>
+    - (OAPromise*) loadFromDisk
+    {
+        OAPromise* promise = [OAPromise promise];
+        dispatch_async(my_queue, ^{
+            ...
+            promise.progress = 0.3;
+            ...
+            promise.progress = 0.6;
+            ...
+            if (loaded) {
+                promise.result = data;
+            } else {
+                promise.error = [NSError ...];
+            }
+        });
+        return promise;
+    }
 
+While the client adds a callback to get notification whenever progress changes:
+
+    [[self loadFromDisk] progress:^(double progress){
+
+        NSLog(@"Current progress: %f%%", 100*progress);
+
+    } queue:nil]
+
+Unlike success and failure callbacks, you anyone can attach multiple progress callbacks to a single promise.
+
+It is also possible to combine progress from multiple operations. Say, we need to load person data from disk and then
 
 <combined example, see below>
 
