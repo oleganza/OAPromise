@@ -202,11 +202,45 @@ However, there is a way to let the operation know if we wish to cancel a promise
 
 This works wonderfully across the chain of promises just as it would work with a single promise.
 
+1) During the operation, check if the promos
+
+```
++ (OAPromise*) loadFromDisk {
+    OAPromise* promise = [OAPromise promise];
+    dispatch_async(my_queue, ^{
+        ...
+        // Check if the promise is already resolved and exit early.
+        if (promise.isResolved) {
+            return;
+        }
+        ...
+        promise.value = result;
+    });
+    return promise;
+}
+```
+
+2) User starts the operation (or a chain of operations) and keeps the reference to the promise.
+
+```
+OAPromise* promise = [[Person loadFromDisk] then:^(id person){
+    return [person loadPicture];
+}];
+```
+
+3) When the user needs to cancel an operation, he resolves a promise with an error. For instance, with conventional NSUserCancelledError (available on both OS X and iOS).
+
+```
+- (IBAction) cancel
+{
+    promise.error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
+}
+```
+
+After that, all the preceding promises will be released and their callbacks will never be invoked. This promise and its successors will handle the error in a usual manner.
 
 
-
-
-### Balancing
+### Balancing state
 
 In this code we have to balance the semaphore state. Regardless of whether any operation completed successfully or not, in the end semaphore should have the same value as before entering the method.
 
