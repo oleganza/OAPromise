@@ -65,7 +65,7 @@ typedef void(^OAPromiseProgressBlock)(double);
 - (OAPromise*) completion:(OAPromiseCompletionBlock)block queue:(dispatch_queue_t)queue;
 - (OAPromise*) completion:(OAPromiseCompletionBlock)block progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
-// Returns a promise which will be resolved with a value returned by -valueForKey:
+// Returns a promise which will be resolved with a value returned by -valueForKey: sent to the value of the receiver (when it is resolved).
 - (OAPromise*) promisedValueForKey:(NSString*)key;
 
 

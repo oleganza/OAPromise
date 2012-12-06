@@ -29,8 +29,7 @@ Comparing to usual callback-based APIs, OAPromise has several advantages:
 
 * Easy API for chaining several typical promises. (E.g. uploading several pictures.)
 * API for concurrent operations with explicit policy of error handling.
-* [Done] Convenience API for accessing properties of the object in form of promises. [self then:^(id v){ return [OAPromise promiseWithValue:[v valueForKey:key]]; }]
-
+* Cancellation API (isResolved must look into the chain of promises)
 
 
 ### Simple callback
