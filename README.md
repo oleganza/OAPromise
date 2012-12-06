@@ -1,6 +1,6 @@
 # OAPromise v0.1
 
-Promise is an object returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise uses callbacks to receive the value or error.
+Promise is an object returned from an asynchronous API. Creator of a promise resolves it asynchronously with either a resulting value, or an error. Receiver of the promise attaches callbacks to it to get notified about the value or error.
 
 OAPromise objects can be passed and stored between different objects.
 
@@ -8,7 +8,7 @@ OAPromise is thread-safe. Callbacks are invoked on the caller's dispatch queue. 
 
 OAPromise allows at most one callback. Methods attaching the callback (-then:, -then:error:, -completion: etc.) return another promise instance.
 
-OAPromise allows attaching the callback when the value is already set. 
+OAPromise allows attaching the callback when the value is already set.
 
 Completion blocks are guaranteed to be called asynchronously in all cases.
 
@@ -32,10 +32,8 @@ Comparing to usual callback-based APIs, OAPromise has several advantages:
 * [Done] Convenience API for accessing properties of the object in form of promises. [self then:^(id v){ return [OAPromise promiseWithValue:[v valueForKey:key]]; }]
 
 
-### Examples
 
-
-##### Simple callback
+### Simple callback
 
 Send a message, receive a promise. Attach a callback to the promise.
 
@@ -44,7 +42,8 @@ Send a message, receive a promise. Attach a callback to the promise.
         return nil;
     }];
 
-##### Handle errors
+
+### Handling errors
 
 Send a message, receive a promise. Attach a success callback and a failure callback to the promise.
 
@@ -56,7 +55,33 @@ Send a message, receive a promise. Attach a success callback and a failure callb
         return nil;
     }];
 
-##### Chaining promises
+
+
+### Giving promises
+
+Providing promise-based API is very simple.
+
+1. When the operation is started, create new instance of OAPromise and return it to caller.
+2. When operation finishes or fails, set the `value` or `error` respectively.
+    
+```
+- (OAPromise*) loadFromDisk
+{
+    OAPromise* promise = [OAPromise promise];
+    dispatch_async(my_queue, ^{
+        ...
+        if (loaded) {
+            promise.value = data;
+        } else {
+            promise.error = [NSError ...];
+        }
+    });
+    return promise;
+}
+```
+
+
+### Chaining promises
 
 Each success or failure callback returns a promise or `nil`. This allows chaining several operations.
 
@@ -70,7 +95,7 @@ Each success or failure callback returns a promise or `nil`. This allows chainin
 In this example `-then:` assigns the first callback and returns a promise to which we attach a second callback. When the first operation completes, `-loadPicture` returns another promise which magically linked with the one returned by `-then:` before. This way we have chained two callbacks even before the first operation (`loadFromDisk`) has completed.
 
 
-##### Handle all errors in one place
+### Handling all errors in one place
 
 When the promise is resolved with an error, it falls through the chain of promises until the first failure callback. This allows to handle different errors in a single place.
 
@@ -89,7 +114,7 @@ In this example, if `-loadFromDisk` fails, the error will be handled without pic
 Fall-through errors allow to not deal with errors in some parts of your code and cleanly handle them in some others. For instance, `-loadPicture` internally may have three different operations returning promises and not handle any error by itself because it will be handled at UI level by whatever piece of code currently in charge.
 
 
-##### Recovering from errors
+### Recovering from errors
 
 Success and error callbacks behave the same way: they both must return a promise or `nil`. If promise is returned, the chain will continue as expected. If `nil` is returned, the chain will halt.
 
@@ -114,7 +139,7 @@ Here we try to load the data from disk, but if it fails, we go to the server. In
 
 
 
-##### Providing progress updates
+### Providing progress updates
 
 Promises are also useful for providing current progress. The owner of the promise can update its progress property.
 
@@ -128,7 +153,7 @@ Promises are also useful for providing current progress. The owner of the promis
             promise.progress = 0.6;
             ...
             if (loaded) {
-                promise.result = data;
+                promise.value = data;
             } else {
                 promise.error = [NSError ...];
             }
@@ -136,73 +161,47 @@ Promises are also useful for providing current progress. The owner of the promis
         return promise;
     }
 
-While the client adds a callback to get notification whenever progress changes:
+The client adds a callback to get notification whenever progress changes:
 
     [[self loadFromDisk] progress:^(double progress){
 
         NSLog(@"Current progress: %f%%", 100*progress);
 
-    } queue:nil]
+    } queue:nil];
 
-Unlike success and failure callbacks, you anyone can attach multiple progress callbacks to a single promise.
-
-It is also possible to combine progress from multiple operations. Say, we need to load person data from disk and then
-
-<combined example, see below>
+Unlike success and failure callbacks, you can attach multiple progress callbacks to a single promise.
 
 
-##### Cancellation
+### Combined progress
+
+It is also possible to combine progress from multiple operations.
+Say, we need to load person data from disk and then load his picture.
+
+In this example we assume that loading data usually takes 30% of the time and picture takes 70%. Also `-loadFromDisk` and `loadPicture` should provide progress updates for their operations.
+
+```
+__block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
+    return [[person loadPicture] progress:^(double picProgress){
+        promise.progress = 0.30 + 0.70*picProgress;
+    }];
+} progress:^(double personProgress){
+    promise.progress = 0.30*personProgress;
+}];
+
+[promise progress:^(double p){
+    NSLog(@"combined progress = %f", p);
+}];
+```
 
 
-- (OAPromise*) doEverything
-{
-	__block OAPromise* loadPicturePromise;
-	__block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
-		loadPicturePromise = [person loadPicture];
-        return [loadPicturePromise progress:^(double p){
-			promise.progress = 0.5 + 0.5*p;
-		}];
-	} progress:^(double p){
-		promise.progress = 0.5*p;
-	}];
-	
-	return [promise progress:^(double p){
-		NSLog(@"pro = %f", p)
-	}];
-}
+### Cancelling operations
 
-OAPromise* promise = [self doEverything];
+It is important to understand that promise does not represent an _operation_, but a future _result_. Operation is controlled by someone else while the promise merely reflects what the operation is doing.
 
+However, there is a way to let the operation know if we wish to cancel a promise. If the user resolves the promise himself, then the operation may check by itself if the promise is resolved already and stop if needed.
 
-- (void) cancel
-{
-	promise.error = NSUserCancelledError();
-}
+This works wonderfully across the chain of promises just as it would work with a single promise.
 
-
-
-### Creating promises
-
-
-##### Example 1: simple callback
-
-
-    - (OAPromise*) loadFromDisk { 
-        OAPromise* promise = [OAPromise promise];
-        dispatch_async(my_queue, ^{
-            ...
-            if (loaded) {
-                promise.result = person;
-            } else {
-                promise.error = [NSError ...];
-            }
-        });
-        return promise;
-    }
-
-
-
-##### Example 2: a composition
 
 
 
