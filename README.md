@@ -32,6 +32,20 @@ Comparing to usual callback-based APIs, OAPromise has several advantages:
 * Cancellation API (isResolved must look into the chain of promises)
 
 
+### Interesting Issues
+
+* Allowing multiple success/failure callbacks allows building a tree of dependant promises. 
+* Promise can be considered discarded only if it has its own flag set, or if all its child promises are discarded.
+* Sometimes we want to discard "observation" of a promise, not the whole chain of operations. E.g. view controller uploads a picture, has Back and Cancel buttons. If Back button is tapped, operation must continue, but all promises and callbacks related to UI updates must be cleaned up. Thus we must distinguish between cancelling the whole chain and only some promises in the end.
+* When promise is discarded we want to cleanup its callbacks immediately without waiting for the current task to acknowledge and cancel.
+* This brings us to an idea that discard process should be parallel to succes and failure propagation + should deal with the fact that callbacks were possibly cleaned up.
+* 3 ways to avoid chaining: 1) manually managing promise(s), 2) [promise observation], 3) [promise observe:…]
+* Discard may deserve its own callback like "finally" in exception handling. 
+* If succeeding promises were already cleaned up, "finally" blocks are either not called or called before real operation have finished. Which may look odd sometimes, but perhaps not unfixable.
+* Thus, "finally" callback should not return any promise at all: ^(BOOL finished){ … }
+* If -completion: is used to handle finally, then it may return promise when not appropriate which must be immediately cleaned up, but operations are already started. So -completion: must not deal with discards.
+
+
 ### Simple callback
 
 Send a message, receive a promise. Attach a callback to the promise.
