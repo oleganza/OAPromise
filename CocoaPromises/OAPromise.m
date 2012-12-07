@@ -53,6 +53,7 @@
         unsigned int resolved:1;
         unsigned int resolvedWithError:1;
         unsigned int callbacksSet:1; // use these flags because we will clear callbacks when they are called to break possible retain cycles.
+        unsigned int discarded:1;
     } _flags;
     OAPromiseFinishBlock _callbackBlock;
     OAPromiseFailureBlock _errbackBlock;
@@ -429,6 +430,25 @@
     return [self then:^(id obj) {
         return [OAPromise promiseWithValue:[obj valueForKey:key]];
     } queue:nil];
+}
+
+- (BOOL) isDiscarded
+{
+    @synchronized(self)
+    {
+        if (_flags.discarded)   return YES;
+        if (_returnedPromise)   return [_returnedPromise isDiscarded];
+        if (_substitutePromise) return [_substitutePromise isDiscarded];
+        return NO;
+    }
+}
+
+- (void) discard
+{
+    @synchronized(self)
+    {
+        _flags.discarded = YES;
+    }
 }
 
 - (BOOL) orly

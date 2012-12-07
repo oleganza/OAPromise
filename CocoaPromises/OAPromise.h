@@ -102,6 +102,12 @@ typedef void(^OAPromiseProgressBlock)(double);
 // Returns YES if the receiver is already resolved with either error or value.
 @property(atomic, readonly, getter=isResolved) BOOL resolved;
 
+// Returns YES if this promise or any promise down the chain is discarded using -discard.
+- (BOOL) isDiscarded;
+
+// Marks promise as discarded so the owner of the promise may (but not required) to check -isDiscarded to resolve the promise early with an error or a value.
+- (void) discard;
+
 - (BOOL) orly; //https://twitter.com/michaelklishin/status/272997040496209920
 
 @end

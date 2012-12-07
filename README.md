@@ -197,20 +197,20 @@ __block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
 
 It is important to understand that promise does not represent an _operation_, but a future _result_. Operation is controlled by someone else while the promise merely reflects what the operation is doing.
 
-However, there is a way to let the operation know if we wish to cancel a promise. If the user resolves the promise himself, then the operation may check by itself if the promise is resolved already and stop if needed.
+However, there is a way to let the operation know if we wish to cancel it. User receiving a promise, can send it a message `-discard` when the promise is no longer interesting. An operation owning a promise may check from time to time if the promise `isDiscarded` and resolve it with a value or an error. Discarding promise does not produce any immediate side effect. Every operation has complete control on how and when to resolve the promise. Operation is not required to even check if the promise is discarded.
 
-This works wonderfully across the chain of promises just as it would work with a single promise.
+This works with chained promises as well. If the promise on the end of the chain is discarded, all preceding promises will be discarded too.
 
-1) During the operation, check if the promos
+1) During the operation, check if the promise `-isDiscarded` and resolve it early.
 
 ```
 + (OAPromise*) loadFromDisk {
     OAPromise* promise = [OAPromise promise];
     dispatch_async(my_queue, ^{
         ...
-        // Check if the promise is already resolved and exit early.
-        if (promise.isResolved) {
-            return;
+        // Check if the promise is not longer needed and exit early.
+        if (promise.isDiscarded) {
+            promise.error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
         }
         ...
         promise.value = result;
@@ -219,7 +219,7 @@ This works wonderfully across the chain of promises just as it would work with a
 }
 ```
 
-2) User starts the operation (or a chain of operations) and keeps the reference to the promise.
+2) Start an operation (or a chain of operations) and keep the reference to the promise.
 
 ```
 OAPromise* promise = [[Person loadFromDisk] then:^(id person){
@@ -227,16 +227,15 @@ OAPromise* promise = [[Person loadFromDisk] then:^(id person){
 }];
 ```
 
-3) When the user needs to cancel an operation, he resolves a promise with an error. For instance, with conventional NSUserCancelledError (available on both OS X and iOS).
+3) When you need to cancel an operation, send a `-discard` message.
 
 ```
 - (IBAction) cancel
 {
-    promise.error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
+    [promise discard];
 }
 ```
 
-After that, all the preceding promises will be released and their callbacks will never be invoked. This promise and its successors will handle the error in a usual manner.
 
 
 ### Balancing state
