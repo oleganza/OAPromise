@@ -10,7 +10,6 @@
  Caller attaches success and failure callbacks to be notified about operation completion.
  Attaching a callback produces another promise object,
  
- Only one success callback and one error callback can be set for a promise.
  When the promise is resolved, you cannot update its state (value, error, progress).
  
  If the callback is attached when promise is already resolved, it will be called on the next runloop cycle.
@@ -39,7 +38,7 @@ typedef void(^OAPromiseProgressBlock)(double);
 //== Client API
 
 // Attaches callback blocks for successful completion, failure and progress notifications.
-// Every block is optional. Success and failure blocks can be added only once. You can add multiple progress blocks.
+// Every block is optional. This method can be called multiple times.
 // Returns a new promise object if either success or failure block is added. Returns self otherwise.
 //
 // Each callback is guaranteed to be called on the next runloop cycle (even if the promise is already resolved).
@@ -47,7 +46,7 @@ typedef void(^OAPromiseProgressBlock)(double);
 // If the queue is nil, main dispatch queue is used.
 - (OAPromise*) then:(OAPromiseFinishBlock)block error:(OAPromiseFailureBlock)errorBlock progress:(OAPromiseProgressBlock)progressBlock queue:(dispatch_queue_t)queue;
 
-// Equivalent to -then:error:progress: with nil error block.
+// Equivalent to -then:error:progress:queue: with nil error block.
 - (OAPromise*) then:(OAPromiseFinishBlock)block queue:(dispatch_queue_t)queue;
 - (OAPromise*) then:(OAPromiseFinishBlock)block progress:(OAPromiseProgressBlock)progressBlock  queue:(dispatch_queue_t)queue;
 
