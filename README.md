@@ -6,7 +6,7 @@ OAPromise objects can be passed and stored between different objects.
 
 OAPromise is thread-safe. Callbacks are invoked on the dispatch queue specified by caller. Value and error can be set from any thread.
 
-OAPromise allows attaching multiple callbacks. Methods attaching the callback (-then:, -then:error:, -completion: etc.) return another promise instance. This way promises can be organized in trees with multiple concurrent consumers for a single producer.
+OAPromise allows attaching multiple callbacks. Methods attaching the callback (`then:`, `then:error:` etc.) return another promise instance. This way promises can be organized in trees with multiple concurrent consumers for a single producer.
 
 OAPromise allows attaching the callback when the value is already set. In this case the callback will be called immediately (on the next runloop cycle).
 
@@ -40,8 +40,8 @@ Comparing to usual callback-based APIs, OAPromise has several advantages:
 * Allowing multiple success/failure callbacks allows building a tree of dependent promises. 
 * Promise can be considered discarded only if it has its own flag set, or if all its child promises are discarded.
 * Sometimes we want to discard "observation" of a promise, not the whole chain of operations. E.g. view controller uploads a picture, has Back and Cancel buttons. If Back button is tapped, operation must continue, but all promises and callbacks related to UI updates must be cleaned up. Thus we must distinguish between canceling the whole chain and only some promises in the end.
-* When promise is discarded we want to cleanup its callbacks immediately without waiting for the current task to acknowledge and cancel.
-* Also, chain of promises may have its own assumptions about values and errors, so discard coming from the end of the chain should not break these assumptions.
+* When the promise is discarded we want to cleanup its callbacks immediately without waiting for the current task to check the promise status and stop. (Think of a view controller that is about to disappear and may be retained by the callback block.)
+* Also, a chain of promises may have its own assumptions about values and errors, so discard coming from the end of the chain should not break these assumptions. This means that using errors for discarding a promise is problematic: either that error is standardized and several discarders in the chain will have hard time distinguishing who actually discarded what; or discard error is task-specific which creates a mess for every independent module that checks the errors.
 * This brings us to an idea that discard process should be parallel to success and failure propagation + should deal with the fact that callbacks were possibly cleaned up.
 * 3 ways to avoid chaining: 1) manually managing promise(s), 2) [promise observation], 3) [promise observe:…]
 * Discard may deserve its own callback like "finally" in exception handling. 
@@ -109,9 +109,9 @@ Each success or failure callback returns a promise or `nil`. This allows chainin
         return nil;
     }]
 
-In this example `-then:` assigns the first callback and returns a promise to which we attach a second callback. When the first operation completes, `-loadPicture` returns another promise which magically linked with the one returned by `-then:` before. This way we have chained two callbacks even before the first operation (`loadFromDisk`) has completed.
+In this example `then:` assigns the first callback and returns a promise to which we attach a second callback. When the first operation completes, `loadPicture` returns another promise which magically linked with the one returned by `then:` before. This way we have chained two callbacks even before the first operation (`loadFromDisk`) has completed.
 
-If a callback returns nil, then the next `-then:` and `-error:` callbacks are not called and the chain of promises is effectively broken. However, all the remaining `-completion:` blocks are called anyway (see below **Cleaning up resources**).
+If a callback returns nil, then the next `then:` and `error:` callbacks are not called and the chain of promises is effectively broken. However, all the remaining `completion:` blocks are called anyway (see below **Cleaning up resources**).
 
 
 ## Handling all errors in one place
@@ -128,9 +128,9 @@ When the promise is resolved with an error, it falls through the chain of promis
     	return nil;
     }];
 
-In this example, if `-loadFromDisk` fails, the error will be handled without picture being loaded.
+In this example, if `loadFromDisk` fails, the error will be handled without picture being loaded.
 
-Fall-through errors allow to not deal with errors in some parts of your code and cleanly handle them in some others. For instance, `-loadPicture` internally may have three different operations returning promises and not handle any error by itself because it will be handled at UI level by whatever piece of code currently in charge.
+Fall-through errors allow to not deal with errors in some parts of your code and cleanly handle them in some others. For instance, `loadPicture` internally may have three different operations returning promises and not handle any error by itself because it will be handled at UI level by whatever piece of code currently in charge.
 
 
 ## Recovering from errors
@@ -154,7 +154,7 @@ It means, that if an error callback returns a promise, we have recovered from th
         return nil;
     }];
 
-Here we try to load some data from disk, but if it fails, we go to the server. In this example we do not handle the error from `-loadFromServer` and let it fall through to the common error handler.
+Here we try to load some data from disk, but if it fails, we go to the server. In this example we do not handle the error from `loadFromServer` and let it fall through to the common error handler.
 
 
 
@@ -180,7 +180,7 @@ Promises are also useful for providing current progress. The owner of the promis
         return promise;
     }
 
-The client adds a callback to get notification whenever progress changes:
+The client adds a callback to get a notification whenever progress changes:
 
     [[self loadFromDisk] progress:^(double progress){
 
@@ -195,7 +195,7 @@ Unlike success and failure callbacks, you can attach multiple progress callbacks
 
 It is also possible to combine progress from multiple operations.
 
-In this example we load person data from disk and then load his picture. Lets assume that loading from disk usually takes 30% of the time and picture takes 70%. Also `-loadFromDisk` and `loadPicture` should provide progress updates for their operations.
+In this example we load person data from disk and then load his picture. Lets assume that loading from disk usually takes 30% of the time and picture takes 70%. Also `loadFromDisk` and `loadPicture` should provide progress updates for their operations.
 
 ```
 __block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
@@ -217,7 +217,7 @@ __block OAPromise* promise = [[Person loadFromDisk] then:^(id person){
 
 It is important to understand that promise does not represent an _operation_, but a future _result_. Operation is controlled by someone else while the promise merely reflects what the operation is doing.
 
-However, there is a way to let the operation know if we wish to cancel it. User receiving a promise, can send it a message `-discard` when the promise is no longer interesting. This will cleanup all resources occupied by pending promises immediately. An operation owning a promise may check from time to time if the promise `isDiscarded` and stop the task. Operation is not required to even check if the promise is discarded. When it sets the value or error for the discarded promise, no callbacks will be called.
+However, there is a way to let the operation know if we wish to cancel it. User receiving a promise, can send it a message `discard` when the promise is no longer interesting. This will cleanup all resources occupied by pending promises immediately. An operation owning a promise may check from time to time if the promise `isDiscarded` and stop the task. Operation is not required to even check if the promise is discarded. When it sets the value or error for the discarded promise, no callbacks will be called.
 
 This works with chained promises as well. If the promise on the end of the chain is discarded, all preceding promises will be discarded too.
 
@@ -225,7 +225,7 @@ If promise has several children (then: or error: callback were assigned several 
 
 For balancing resource use, `completion` callback must be used. It will always be called either right after a success or failure callback, or when the promise is discard.
 
-1) During the operation, check if the promise `-isDiscarded` and resolve it early.
+1) During the operation, check if the promise `isDiscarded` and resolve it early.
 
 ```
 + (OAPromise*) loadFromDisk {
@@ -251,7 +251,7 @@ OAPromise* promise = [[Person loadFromDisk] then:^(id person){
 }];
 ```
 
-3) When you need to cancel an operation, send a `-discard` message.
+3) When you need to cancel an operation, send a `discard` message.
 
 ```
 - (IBAction) cancel
@@ -259,6 +259,30 @@ OAPromise* promise = [[Person loadFromDisk] then:^(id person){
     [promise discard];
 }
 ```
+
+
+
+## Observing promises
+
+When you use `then:` or `error:`, they add a new promise to the chain. When this promise is discarded, the whole chain up to the current operation is discarded. But what if you want to continue the operation and use promise API only to observe the operation, but not affect it when you discard your observation callbacks? For this there is an _observe_ promise that is resolved when it's owner is resolved, but it does not discard it.
+
+	_uploadPromise = [self uploadPicture];
+	_waitingForUpload = [[_uploadPromise observe] then:^(id _){
+		self.label.text = @"Done.";
+	}];
+	
+	- (void) viewWillDisappear
+	{
+		// discards only observing promise chain, but lets upload finish.
+		[_waitingForUpload discard];
+	}
+	
+	- (void) cancel
+	{
+		// cancels the upload operation and discards _waitingForUpload promise too.
+		[_uploadPromise discard];
+	}
+
 
 
 ## Cleaning up resources
@@ -278,7 +302,7 @@ Completion block is guaranteed to be invoked in all cases, therefore it is the b
     			[self alert:@"Thank you!"];
     			return nil;
     		}];
-    	}] completion:^(id _, NSError* __, BOOL finished){
+    	}] completion:^(id _, NSError* error, BOOL finished){
     		// No matter what happens, hide the progress indicator. 
     		// Some operation could have failed, or cancelled, 
     		// but this block will still be called.
@@ -291,24 +315,24 @@ Completion block takes three arguments: value, error and finished flag. When the
 
 ## Memory ownership
 
-Promises form a chain, or more generally, a tree (when you attach multiple callbacks to a single promise using `-then:` etc.).
+Promises form a chain, or more generally, a tree (when you attach multiple callbacks to a single promise using `then:` etc.).
 
-Current operation owns the promise and updates its status. New promises returned from -then: are retained by the receiver in order to be connected with a returned promise from the callback. When the callback is fired, its promise is cleaned up and its child promises become owned by the respective promises returned from the callback. 
+Current operation owns the promise and updates its status. New promises returned from `then:` are retained by the receiver in order to be connected with a returned promise from the callback. When the callback is fired, its promise is cleaned up and its child promises become owned by the respective promises returned from the callback. 
 
-Thus, consumer is not required to keep a strong reference to the promise or worry about retained self in their blocks. However, consumer might want to cancel some operations to reclaim memory sooner (e.g. user leaves the window). This is done via `-discard`. Discarded promises cannot force operation to stop (only inform them), but they do clean up all the callbacks and linked promises immediately.
+Thus, consumer is not required to keep a strong reference to the promise or worry about retained self in their blocks. However, consumer might want to cancel some operations to reclaim memory sooner (e.g. user leaves the window). This is done via `discard`. Discarded promises cannot force operation to stop (only inform them), but they do clean up all the callbacks and linked promises immediately.
 
 
 
 ## Forwarding promises
 
-If you need to attach a `-then:` or `error:` callback, but without continuing with another operation, you may want to forward the existing result to the next consumers. It may be useful for debugging. In such cases return [OAPromise promiseWithValue:value] or [OAPromise promiseWithError:error]:
+If you need to attach a `then:` or `error:` callback, but without continuing with another operation, you may want to forward the existing result to the next consumers. It may be useful for debugging. In such cases return [OAPromise promiseWithValue:value] or [OAPromise promiseWithError:error]:
 
     [[server downloadPicture] then:^(UIImage* picture){
     	NSLog(@"Downloaded picture with size: %@", [picture valueForKey:@"size"]);
     	return [OAPromise promiseWithValue:picture];
     }];
 
-Next consumer will attach `-then:` callback to the resulting chain of promises and will get picture value exactly the same way (with one runloop cycle delay) as if we did not have logging block added.
+Next consumer will attach `then:` callback to the resulting chain of promises and will get picture value exactly the same way (with one runloop cycle delay) as if we did not have logging block added.
 
 Same idea applies to error callbacks. 
 
